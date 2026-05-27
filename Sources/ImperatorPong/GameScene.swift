@@ -73,11 +73,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         crtLayer.isUserInteractionEnabled = false
         addChild(crtLayer)
 
+        setupRGBGrid(w: w, h: h)
         setupScanlines(w: w, h: h)
         setupFlicker(w: w, h: h)
         setupTrackingBand(w: w, h: h)
         setupNoise(w: w, h: h)
         setupScreenJitter()
+    }
+
+    private func setupRGBGrid(w: CGFloat, h: CGFloat) {
+        let tex = createRGBGridTexture(width: Int(w), height: Int(h))
+        let rgbOverlay = SKSpriteNode(texture: tex, size: CGSize(width: w, height: h))
+        rgbOverlay.anchorPoint = CGPoint(x: 0, y: 0)
+        rgbOverlay.position = .zero
+        rgbOverlay.alpha = 0.04
+        rgbOverlay.blendMode = .add
+        crtLayer.addChild(rgbOverlay)
     }
 
     private func setupScanlines(w: CGFloat, h: CGFloat) {
@@ -238,6 +249,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         image.unlockFocus()
         return SKTexture(image: image)
+    }
+
+    private func createRGBGridTexture(width: Int, height: Int) -> SKTexture {
+        let size = CGSize(width: width, height: height)
+        let image = NSImage(size: size)
+        image.lockFocus()
+        NSColor.black.setFill()
+        NSRect(origin: .zero, size: size).fill()
+        let colors: [NSColor] = [
+            NSColor(red: 1, green: 0, blue: 0, alpha: 1),
+            NSColor(red: 0, green: 1, blue: 0, alpha: 1),
+            NSColor(red: 0, green: 0, blue: 1, alpha: 1),
+        ]
+        let cellW = 1
+        for x in stride(from: 0, to: width, by: cellW * 3) {
+            for (i, color) in colors.enumerated() {
+                color.setFill()
+                NSRect(x: CGFloat(x + i * cellW), y: 0, width: CGFloat(cellW), height: CGFloat(height)).fill()
+            }
+        }
+        image.unlockFocus()
+        let tex = SKTexture(image: image)
+        tex.filteringMode = .nearest
+        return tex
     }
 
     // MARK: - Skin
