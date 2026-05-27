@@ -143,7 +143,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         noiseOverlay = SKSpriteNode(texture: tex, size: CGSize(width: w * 1.5, height: h * 1.5))
         noiseOverlay.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         noiseOverlay.position = CGPoint(x: w / 2, y: h / 2)
-        noiseOverlay.alpha = 0.06
+        noiseOverlay.alpha = 0.02
         noiseOverlay.blendMode = .screen
         crtLayer.addChild(noiseOverlay)
 
@@ -546,6 +546,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     private func resetGame() {
+        removeAction(forKey: "scoreWait")
         playerScore = 0
         aiScore = 0
         updateScoreDisplays()
@@ -627,10 +628,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             gameState = .gameOver
         } else {
             let wait = SKAction.wait(forDuration: 0.5)
-            run(wait) { [weak self] in
+            run(SKAction.sequence([wait, SKAction.run { [weak self] in
+                guard self?.gameState == .scored else { return }
                 self?.gameState = .playing
                 self?.launchBall()
-            }
+            }]), withKey: "scoreWait")
         }
     }
 
