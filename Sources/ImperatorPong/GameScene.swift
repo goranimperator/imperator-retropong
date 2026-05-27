@@ -18,6 +18,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private var aiScoreNode: SKNode!
 
     private var centerDashes: [SKSpriteNode] = []
+    private var gameLayer: SKEffectNode!
     private var crtLayer: SKNode!
     private var scanlineOverlay: SKSpriteNode!
     private var flickerOverlay: SKSpriteNode!
@@ -38,6 +39,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         physicsWorld.gravity = .zero
         physicsWorld.contactDelegate = self
 
+        setupGameLayer()
         setupCenterLine()
         setupScoreDisplays()
         setupPaddles()
@@ -47,6 +49,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         setupMessage()
         setupCRT()
         applySkin()
+    }
+
+    private func setupGameLayer() {
+        gameLayer = SKEffectNode()
+        let bloom = CIFilter(name: "CIBloom")!
+        bloom.setValue(6.0, forKey: "inputRadius")
+        bloom.setValue(0.6, forKey: "inputIntensity")
+        gameLayer.filter = bloom
+        gameLayer.shouldEnableEffects = true
+        addChild(gameLayer)
     }
 
     // MARK: - CRT effects (scanlines + flicker + VHS tracking + noise + jitter)
@@ -258,7 +270,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             dash.anchorPoint = CGPoint(x: 0, y: 0)
             dash.position = CGPoint(x: x, y: y)
             dash.zPosition = -1
-            addChild(dash)
+            gameLayer.addChild(dash)
             centerDashes.append(dash)
             x += dashSize + gap
         }
@@ -269,12 +281,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         playerScoreNode = SKNode()
         playerScoreNode.position = CGPoint(x: scoreX, y: GameConfig.sceneHeight * 0.25)
         playerScoreNode.zPosition = -1
-        addChild(playerScoreNode)
+        gameLayer.addChild(playerScoreNode)
 
         aiScoreNode = SKNode()
         aiScoreNode.position = CGPoint(x: scoreX, y: GameConfig.sceneHeight * 0.75)
         aiScoreNode.zPosition = -1
-        addChild(aiScoreNode)
+        gameLayer.addChild(aiScoreNode)
 
         renderScore(0, in: playerScoreNode)
         renderScore(0, in: aiScoreNode)
@@ -329,7 +341,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         playerPaddle.physicsBody?.categoryBitMask = GameConfig.paddleCategory
         playerPaddle.physicsBody?.friction = 0
         playerPaddle.physicsBody?.restitution = 1.0
-        addChild(playerPaddle)
+        gameLayer.addChild(playerPaddle)
 
         aiPaddle = SKSpriteNode(color: .white, size: paddleSize)
         aiPaddle.position = CGPoint(x: GameConfig.sceneWidth / 2, y: GameConfig.aiPaddleY)
@@ -338,7 +350,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         aiPaddle.physicsBody?.categoryBitMask = GameConfig.paddleCategory
         aiPaddle.physicsBody?.friction = 0
         aiPaddle.physicsBody?.restitution = 1.0
-        addChild(aiPaddle)
+        gameLayer.addChild(aiPaddle)
     }
 
     private func setupBall() {
@@ -356,7 +368,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.physicsBody?.linearDamping = 0
         ball.physicsBody?.angularDamping = 0
         ball.physicsBody?.allowsRotation = false
-        addChild(ball)
+        gameLayer.addChild(ball)
     }
 
     private func setupWalls() {
@@ -403,7 +415,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         messageLabel.position = CGPoint(x: GameConfig.sceneWidth / 2, y: GameConfig.sceneHeight / 2 + 30)
         messageLabel.verticalAlignmentMode = .center
         messageLabel.text = "CLICK TO START"
-        addChild(messageLabel)
+        gameLayer.addChild(messageLabel)
     }
 
     // MARK: - Input
@@ -522,12 +534,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let winner = playerScore >= GameConfig.winningScore ? "YOU WIN!" : "CPU WINS!"
             messageLabel.text = winner
             messageLabel.isHidden = false
-            messageLabel.setScale(1)
-            let pulse = SKAction.sequence([
-                SKAction.scale(to: 1.15, duration: 0.5),
-                SKAction.scale(to: 1.0, duration: 0.5)
+            messageLabel.alpha = 1
+            let blink = SKAction.sequence([
+                SKAction.hide(),
+                SKAction.wait(forDuration: 0.4),
+                SKAction.unhide(),
+                SKAction.wait(forDuration: 0.4),
             ])
-            messageLabel.run(SKAction.repeatForever(pulse))
+            messageLabel.run(SKAction.repeatForever(blink))
             gameState = .gameOver
         } else {
             let wait = SKAction.wait(forDuration: 0.5)

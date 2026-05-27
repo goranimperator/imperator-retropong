@@ -2,14 +2,18 @@ import AppKit
 
 enum Skin: String, CaseIterable {
     case red = "Imperator Red"
+    case blue = "Neon Blue"
+    case purple = "Electric Purple"
     case green = "Arcade Green"
     case white = "Classic White"
 
     var color: NSColor {
         switch self {
-        case .red:   return NSColor(red: 0xa0/255, green: 0x18/255, blue: 0x18/255, alpha: 1)
-        case .green: return NSColor(red: 0, green: 1, blue: 0, alpha: 1)
-        case .white: return .white
+        case .red:    return NSColor(red: 0xa0/255, green: 0x18/255, blue: 0x18/255, alpha: 1)
+        case .blue:   return NSColor(red: 0x18/255, green: 0x40/255, blue: 0xd4/255, alpha: 1)
+        case .purple: return NSColor(red: 0x8b/255, green: 0x18/255, blue: 0xd4/255, alpha: 1)
+        case .green:  return NSColor(red: 0, green: 1, blue: 0, alpha: 1)
+        case .white:  return .white
         }
     }
 
@@ -27,7 +31,7 @@ enum Skin: String, CaseIterable {
 
 enum GameConfig {
     static let sceneWidth: CGFloat = 280
-    static let sceneHeight: CGFloat = 400
+    static let sceneHeight: CGFloat = 330
 
     static let px: CGFloat = 4
 
@@ -55,7 +59,7 @@ enum GameConfig {
     static let wallCategory: UInt32   = 0x1 << 2
     static let goalCategory: UInt32   = 0x1 << 3
 
-    static let winningScore: Int = 7
+    static let winningScore: Int = 10
 
     static let scorePixel: CGFloat = 6
 
