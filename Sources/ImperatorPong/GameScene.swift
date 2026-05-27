@@ -12,7 +12,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private var playerPaddle: SKSpriteNode!
     private var aiPaddle: SKSpriteNode!
     private var ball: SKSpriteNode!
-    private var messageLabel: SKLabelNode!
+    private var messageNode: SKNode!
 
     private var playerScoreNode: SKNode!
     private var aiScoreNode: SKNode!
@@ -25,6 +25,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private var trackingBand: SKSpriteNode!
     private var noiseOverlay: SKSpriteNode!
 
+    private var messageText: String = "CLICK TO START"
     private var gameState: GameState = .waitingToStart
     private var playerScore = 0
     private var aiScore = 0
@@ -250,7 +251,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
         for node in centerDashes { node.color = color }
 
-        messageLabel?.fontColor = color
+        if let msg = messageNode { renderMessage(messageText, in: msg) }
 
         if let pNode = playerScoreNode { renderScore(playerScore, in: pNode) }
         if let aNode = aiScoreNode { renderScore(aiScore, in: aNode) }
@@ -409,13 +410,68 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     private func setupMessage() {
-        messageLabel = SKLabelNode(fontNamed: "Menlo-Bold")
-        messageLabel.fontSize = 14
-        messageLabel.fontColor = .white
-        messageLabel.position = CGPoint(x: GameConfig.sceneWidth / 2, y: GameConfig.sceneHeight / 2 + 30)
-        messageLabel.verticalAlignmentMode = .center
-        messageLabel.text = "CLICK TO START"
-        gameLayer.addChild(messageLabel)
+        messageNode = SKNode()
+        messageNode.position = CGPoint(x: GameConfig.sceneWidth / 2, y: GameConfig.sceneHeight / 2 + 30)
+        gameLayer.addChild(messageNode)
+        renderMessage(messageText, in: messageNode)
+        startBlinking()
+    }
+
+    private func renderMessage(_ text: String, in container: SKNode) {
+        container.removeAllChildren()
+        let sp = GameConfig.messagePixel
+        let charW = 3 * sp
+        let gap = sp
+        let totalW = CGFloat(text.count) * (charW + gap) - gap
+        var x = -totalW / 2
+        let color = Skin.current.color
+
+        for ch in text {
+            if let pattern = GameConfig.charPatterns[ch] {
+                renderGlyph(pattern, at: CGPoint(x: x, y: -2.5 * sp), color: color, pixel: sp, in: container)
+            } else if let digit = ch.wholeNumberValue {
+                let pattern = GameConfig.digitPatterns[digit]
+                renderGlyph(pattern, at: CGPoint(x: x, y: -2.5 * sp), color: color, pixel: sp, in: container)
+            }
+            x += charW + gap
+        }
+    }
+
+    private func renderGlyph(_ pattern: [UInt8], at origin: CGPoint, color: SKColor, pixel sp: CGFloat, in container: SKNode) {
+        for row in 0..<5 {
+            let rowBits = pattern[row]
+            for col in 0..<3 {
+                let bit = (rowBits >> (2 - col)) & 1
+                if bit == 1 {
+                    let block = SKSpriteNode(color: color, size: CGSize(width: sp, height: sp))
+                    block.anchorPoint = CGPoint(x: 0, y: 0)
+                    block.position = CGPoint(
+                        x: origin.x + CGFloat(col) * sp,
+                        y: origin.y + CGFloat(4 - row) * sp
+                    )
+                    container.addChild(block)
+                }
+            }
+        }
+    }
+
+    private func showMessage(_ text: String) {
+        messageText = text
+        renderMessage(text, in: messageNode)
+        startBlinking()
+    }
+
+    private func startBlinking() {
+        messageNode.removeAllActions()
+        messageNode.isHidden = false
+        messageNode.alpha = 1
+        let blink = SKAction.sequence([
+            SKAction.hide(),
+            SKAction.wait(forDuration: 0.5),
+            SKAction.unhide(),
+            SKAction.wait(forDuration: 0.5),
+        ])
+        messageNode.run(SKAction.repeatForever(blink))
     }
 
     // MARK: - Input
@@ -444,8 +500,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         aiScore = 0
         updateScoreDisplays()
         currentBallSpeed = GameConfig.initialBallSpeed
-        messageLabel.removeAllActions()
-        messageLabel.isHidden = true
+        messageNode.removeAllActions()
+        messageNode.isHidden = true
         gameState = .playing
         launchBall()
     }
@@ -463,11 +519,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.physicsBody?.velocity = .zero
         playerPaddle.position.x = GameConfig.sceneWidth / 2
         aiPaddle.position.x = GameConfig.sceneWidth / 2
-        messageLabel.removeAllActions()
-        messageLabel.alpha = 1
-        messageLabel.setScale(1)
-        messageLabel.text = "CLICK TO START"
-        messageLabel.isHidden = false
+        showMessage("CLICK TO START")
         gameState = .waitingToStart
     }
 
@@ -536,16 +588,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
         if playerScore >= GameConfig.winningScore || aiScore >= GameConfig.winningScore {
             let winner = playerScore >= GameConfig.winningScore ? "YOU WIN!" : "CPU WINS!"
-            messageLabel.text = winner
-            messageLabel.isHidden = false
-            messageLabel.alpha = 1
-            let blink = SKAction.sequence([
-                SKAction.hide(),
-                SKAction.wait(forDuration: 0.4),
-                SKAction.unhide(),
-                SKAction.wait(forDuration: 0.4),
-            ])
-            messageLabel.run(SKAction.repeatForever(blink))
+            showMessage(winner)
             gameState = .gameOver
         } else {
             let wait = SKAction.wait(forDuration: 0.5)
