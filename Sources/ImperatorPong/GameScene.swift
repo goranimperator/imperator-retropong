@@ -143,7 +143,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         noiseOverlay = SKSpriteNode(texture: tex, size: CGSize(width: w * 1.5, height: h * 1.5))
         noiseOverlay.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         noiseOverlay.position = CGPoint(x: w / 2, y: h / 2)
-        noiseOverlay.alpha = 0.02
+        noiseOverlay.alpha = 0.03
         noiseOverlay.blendMode = .screen
         crtLayer.addChild(noiseOverlay)
 
