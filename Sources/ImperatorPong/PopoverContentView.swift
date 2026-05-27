@@ -36,6 +36,8 @@ struct PopoverContentView: View {
                     }
                 }
             }
+
+            ResetButton(action: { gameScene.reset() })
         }
         .frame(height: 20, alignment: .center)
         .padding(.horizontal, 16)
@@ -191,6 +193,43 @@ struct LaunchAtLoginToggle: View {
                 isEnabled = SMAppService.mainApp.status == .enabled
             }
         }
+    }
+}
+
+struct ResetButton: View {
+    let action: () -> Void
+    @State private var isHovered = false
+    @State private var rotation: Double = 0
+
+    var body: some View {
+        Button {
+            action()
+            withAnimation(.interpolatingSpring(stiffness: 60, damping: 8)) {
+                rotation -= 360
+            }
+        } label: {
+            if let nsImage = Self.resetImage(size: 14) {
+                Image(nsImage: nsImage)
+                    .rotationEffect(.degrees(rotation))
+            }
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.primary)
+        .opacity(isHovered ? 1.0 : 0.45)
+        .animation(.easeInOut(duration: 0.2), value: isHovered)
+        .onHover { isHovered = $0 }
+    }
+
+    private static let svg = """
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+    """
+
+    static func resetImage(size: CGFloat) -> NSImage? {
+        guard let data = svg.data(using: .utf8),
+              let image = NSImage(data: data) else { return nil }
+        image.isTemplate = true
+        image.size = NSSize(width: size, height: size)
+        return image
     }
 }
 

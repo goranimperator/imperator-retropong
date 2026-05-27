@@ -450,6 +450,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         launchBall()
     }
 
+    func reset() {
+        resetGame()
+    }
+
     private func resetGame() {
         playerScore = 0
         aiScore = 0
