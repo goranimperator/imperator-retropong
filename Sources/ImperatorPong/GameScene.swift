@@ -54,7 +54,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
     private func setupGameLayer() {
         gameLayer = SKEffectNode()
-        let bloom = CIFilter(name: "CIBloom")!
+        guard let bloom = CIFilter(name: "CIBloom") else { return }
         bloom.setValue(6.0, forKey: "inputRadius")
         bloom.setValue(0.6, forKey: "inputIntensity")
         gameLayer.filter = bloom
@@ -158,14 +158,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     private func setupScreenJitter() {
-        let gameContent = SKNode()
-        gameContent.name = "gameContentWrapper"
+        scheduleNextGlitch()
+    }
 
-        let jitterCycle = SKAction.sequence([
-            SKAction.wait(forDuration: 2.0 + Double.random(in: 0...1)),
-            SKAction.run { [weak self] in self?.fireGlitch() },
-        ])
-        run(SKAction.repeatForever(jitterCycle), withKey: "jitterLoop")
+    private func scheduleNextGlitch() {
+        let delay = SKAction.wait(forDuration: 2.0 + Double.random(in: 0...1))
+        run(SKAction.sequence([delay, SKAction.run { [weak self] in
+            self?.fireGlitch()
+            self?.scheduleNextGlitch()
+        }]), withKey: "jitterLoop")
     }
 
     private func fireGlitch() {
@@ -313,7 +314,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     private func setupScoreDisplays() {
-        let scoreX = GameConfig.sceneWidth - 50
+        let scoreX = GameConfig.sceneWidth - GameConfig.scoreInsetX
         playerScoreNode = SKNode()
         playerScoreNode.position = CGPoint(x: scoreX, y: GameConfig.sceneHeight * 0.25)
         playerScoreNode.zPosition = -1
@@ -446,7 +447,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
     private func setupMessage() {
         messageNode = SKNode()
-        messageNode.position = CGPoint(x: GameConfig.sceneWidth / 2, y: GameConfig.sceneHeight / 2 + 30)
+        messageNode.position = CGPoint(x: GameConfig.sceneWidth / 2, y: GameConfig.sceneHeight / 2 + GameConfig.messageOffsetY)
         gameLayer.addChild(messageNode)
         renderMessage(messageText, in: messageNode)
         startBlinking()
@@ -522,7 +523,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         case .waitingToStart:
             startGame()
         case .gameOver:
-            resetGame()
+            reset()
         case .playing, .scored:
             handleMousePosition(location)
         }
@@ -542,10 +543,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     func reset() {
-        resetGame()
-    }
-
-    private func resetGame() {
         removeAction(forKey: "scoreWait")
         playerScore = 0
         aiScore = 0
@@ -614,6 +611,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         gameState = .scored
 
         ball.physicsBody?.velocity = .zero
+        ball.position = CGPoint(x: GameConfig.sceneWidth / 2, y: GameConfig.sceneHeight / 2)
 
         if goal.name == "bottomGoal" {
             aiScore += 1

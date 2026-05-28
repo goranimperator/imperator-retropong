@@ -62,6 +62,8 @@ enum GameConfig {
     static let winningScore: Int = 10
 
     static let scorePixel: CGFloat = 6
+    static let scoreInsetX: CGFloat = 50
+    static let messageOffsetY: CGFloat = 30
 
     static let messagePixel: CGFloat = 3
 
