@@ -59,7 +59,7 @@ enum GameConfig {
     static let wallCategory: UInt32   = 0x1 << 2
     static let goalCategory: UInt32   = 0x1 << 3
 
-    static let winningScore: Int = 10
+    static let winningScore: Int = 5
 
     static let scorePixel: CGFloat = 6
     static let scoreInsetX: CGFloat = 50
