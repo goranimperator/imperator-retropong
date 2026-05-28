@@ -2,9 +2,9 @@ import AppKit
 
 enum Skin: String, CaseIterable {
     case red = "Imperator Red"
+    case green = "Arcade Green"
     case blue = "Neon Blue"
     case purple = "Electric Purple"
-    case green = "Arcade Green"
     case white = "Classic White"
 
     var color: NSColor {
