@@ -398,7 +398,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.physicsBody = SKPhysicsBody(rectangleOf: size)
         ball.physicsBody?.isDynamic = true
         ball.physicsBody?.categoryBitMask = GameConfig.ballCategory
-        ball.physicsBody?.contactTestBitMask = GameConfig.paddleCategory | GameConfig.goalCategory
+        ball.physicsBody?.contactTestBitMask = GameConfig.paddleCategory | GameConfig.goalCategory | GameConfig.wallCategory
         ball.physicsBody?.collisionBitMask = GameConfig.paddleCategory | GameConfig.wallCategory
         ball.physicsBody?.friction = 0
         ball.physicsBody?.restitution = 1.0
@@ -584,6 +584,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             if let p = paddle as? SKSpriteNode { handlePaddleHit(paddle: p) }
         }
 
+        if categories == (GameConfig.ballCategory, GameConfig.wallCategory)
+            || categories == (GameConfig.wallCategory, GameConfig.ballCategory) {
+            SoundManager.shared.playWallHit()
+        }
+
         if categories == (GameConfig.ballCategory, GameConfig.goalCategory)
             || categories == (GameConfig.goalCategory, GameConfig.ballCategory) {
             let goal = a.categoryBitMask == GameConfig.goalCategory ? a.node : b.node
@@ -592,6 +597,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     private func handlePaddleHit(paddle: SKSpriteNode) {
+        SoundManager.shared.playPaddleHit()
         currentBallSpeed = min(currentBallSpeed + GameConfig.speedIncrement, GameConfig.maxBallSpeed)
 
         let hitOffset = (ball.position.x - paddle.position.x) / (GameConfig.paddleWidth / 2)
@@ -609,6 +615,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private func handleGoal(_ goal: SKNode) {
         guard gameState == .playing else { return }
         gameState = .scored
+        SoundManager.shared.playScore()
 
         ball.physicsBody?.velocity = .zero
         ball.position = CGPoint(x: GameConfig.sceneWidth / 2, y: GameConfig.sceneHeight / 2)

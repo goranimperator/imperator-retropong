@@ -37,6 +37,7 @@ struct PopoverContentView: View {
                 }
             }
 
+            SoundButton()
             ResetButton(action: { gameScene.reset() })
         }
         .frame(height: 20, alignment: .center)
@@ -193,6 +194,45 @@ struct LaunchAtLoginToggle: View {
                 isEnabled = SMAppService.mainApp.status == .enabled
             }
         }
+    }
+}
+
+struct SoundButton: View {
+    @State private var isEnabled = SoundManager.shared.isEnabled
+    @State private var isHovered = false
+
+    var body: some View {
+        Button {
+            isEnabled.toggle()
+            SoundManager.shared.isEnabled = isEnabled
+        } label: {
+            if let nsImage = Self.soundImage(on: isEnabled, size: 14) {
+                Image(nsImage: nsImage)
+            }
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.primary)
+        .opacity(isHovered || isEnabled ? 1.0 : 0.45)
+        .animation(.easeInOut(duration: 0.2), value: isHovered)
+        .animation(.easeInOut(duration: 0.15), value: isEnabled)
+        .onHover { isHovered = $0 }
+    }
+
+    private static let svgOn = """
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+    """
+
+    private static let svgOff = """
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="22" y1="9" x2="16" y2="15"/><line x1="16" y1="9" x2="22" y2="15"/></svg>
+    """
+
+    static func soundImage(on: Bool, size: CGFloat) -> NSImage? {
+        let svg = on ? svgOn : svgOff
+        guard let data = svg.data(using: .utf8),
+              let image = NSImage(data: data) else { return nil }
+        image.isTemplate = true
+        image.size = NSSize(width: size, height: size)
+        return image
     }
 }
 
