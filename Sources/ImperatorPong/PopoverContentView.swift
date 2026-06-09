@@ -2,6 +2,18 @@ import SwiftUI
 import SpriteKit
 import ServiceManagement
 
+extension View {
+    func cursor(_ cursor: NSCursor) -> some View {
+        onHover { inside in
+            if inside { cursor.push() } else { NSCursor.pop() }
+        }
+    }
+
+    func expandTapTarget() -> some View {
+        contentShape(Rectangle())
+    }
+}
+
 struct PopoverContentView: View {
     let gameScene: GameScene
     let quitAction: () -> Void
@@ -37,8 +49,8 @@ struct PopoverContentView: View {
                 }
             }
 
-            SoundButton()
             ResetButton(action: { gameScene.reset() })
+            SoundButton()
         }
         .frame(height: 20, alignment: .center)
         .padding(.horizontal, 16)
@@ -176,7 +188,7 @@ struct LaunchAtLoginToggle: View {
                 .toggleStyle(.switch)
                 .scaleEffect(0.55)
                 .frame(width: 36, height: 20)
-                .tint(Color(red: 0xa0/255.0, green: 0x18/255.0, blue: 0x18/255.0))
+                .tint(AppColors.brand)
                 .labelsHidden()
         }
         .foregroundStyle(.primary)

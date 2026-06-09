@@ -9,6 +9,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var eventMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NSApp.appearance = NSAppearance(named: .darkAqua)
+        UserDefaults.standard.set(0, forKey: "AppleAccentColor")
+        ProcessInfo.processInfo.setValue("Imperator Pong", forKey: "processName")
+
         setupGameScene()
         setupPopover()
         setupStatusItem()

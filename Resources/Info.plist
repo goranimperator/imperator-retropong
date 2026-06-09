@@ -24,5 +24,7 @@
     <string>AppIcon</string>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright (c) 1986 Goran Imperator. All rights reserved.</string>
 </dict>
 </plist>
