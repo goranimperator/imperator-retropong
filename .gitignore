@@ -1,4 +1,8 @@
 .DS_Store
 .build/
-*.app
 .swiftpm/
+build/
+dist/
+*.app
+*.zip
+.claude/settings.local.json

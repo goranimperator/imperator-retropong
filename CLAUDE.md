@@ -4,23 +4,48 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build & Run
 
+The `Makefile` is the only build path. Do not add a second one.
+
 ```bash
-# Debug build
-swift build
-
-# Release build + install to /Applications
-./build.sh
-
-# Manual release build + launch
-swift build -c release
-cp .build/release/ImperatorPong "Imperator Pong.app/Contents/MacOS/ImperatorPong"
-codesign --sign - --force --deep "Imperator Pong.app"
-open "Imperator Pong.app"
+make install
 ```
 
-Kill existing instance before relaunching: `pkill -f ImperatorPong`
+Builds release into `build/Imperator Pong.app`, codesigns, installs to
+`/Applications`, and launches. `make install` kills any running instance first.
+
+```bash
+make run
+make clean
+swift build
+```
+
+`make run` builds and opens the bundle in place; `swift build` alone is a debug
+compile check with no bundle.
 
 No tests or linter configured.
+
+## Release
+
+Follow the `imperator-release` skill. Audit first, tag last, never without
+Goran's explicit word in that message.
+
+```bash
+make dist VERSION=1.0.0
+make release VERSION=1.0.0
+```
+
+`dist` is safe — it touches nothing in git or on the remote. `release` bumps
+`Info.plist`, commits, tags, pushes, and publishes a **GitHub** release with the
+zip attached. The remote is `goranimperator/imperator-menu-bar-pong` on GitHub.
+
+Signing uses the self-signed `Imperator Dev` identity, not ad-hoc. The app
+registers a login item via `SMAppService`, and that registration is keyed to the
+bundle's designated requirement — ad-hoc mints a new cdhash per build, so every
+update would read as a different app and drop the login item.
+
+`CFBundleShortVersionString` is bumped by the release target and
+`CFBundleVersion` comes from `git rev-list --count HEAD`. Never edit either by
+hand.
 
 ## Architecture
 
@@ -41,13 +66,13 @@ Menu bar popover app (no Dock icon, `LSUIElement = true`) built with SPM. Entry 
 
 ## Brand Book
 
-This app follows the Imperator brand book (`/tmp/imperator-mac-apps-brandbook/BRANDBOOK.md`). Key requirements:
+This app follows the Imperator brand book (`~/Code/imperator/imperator-apps-brandbook/BRANDBOOK.md`). Key requirements:
 - `AppColors.brand` (`#A01818`) for all accent colors — never use bare `Color.accentColor`
 - Dark mode forced via `NSApp.appearance = NSAppearance(named: .darkAqua)`
 - Accent override via `UserDefaults.standard.set(0, forKey: "AppleAccentColor")`
 - Popover width exception: 280pt (game-specific, not standard 340pt)
 - SPM build: no `.xcassets` support, menu bar icon drawn programmatically
-- Ad-hoc code signing required: `codesign --sign - --force --deep`
+- Code signing: self-signed `Imperator Dev` identity, handled by the Makefile
 
 ## SPM Notes
 
