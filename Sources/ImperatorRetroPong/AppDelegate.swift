@@ -11,7 +11,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.appearance = NSAppearance(named: .darkAqua)
         UserDefaults.standard.set(0, forKey: "AppleAccentColor")
-        ProcessInfo.processInfo.setValue("Imperator Pong", forKey: "processName")
+        ProcessInfo.processInfo.setValue("Imperator RetroPong", forKey: "processName")
 
         setupGameScene()
         setupPopover()

@@ -3,14 +3,14 @@
 import PackageDescription
 
 let package = Package(
-    name: "ImperatorPong",
+    name: "ImperatorRetroPong",
     platforms: [
         .macOS(.v13)
     ],
     targets: [
         .executableTarget(
-            name: "ImperatorPong",
-            path: "Sources/ImperatorPong"
+            name: "ImperatorRetroPong",
+            path: "Sources/ImperatorRetroPong"
         )
     ]
 )

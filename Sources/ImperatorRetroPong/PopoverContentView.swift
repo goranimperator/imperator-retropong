@@ -34,7 +34,7 @@ struct PopoverContentView: View {
 
     private var headerView: some View {
         HStack {
-            Text("Imperator Pong")
+            Text("RetroPong")
                 .font(.headline)
 
             Spacer()

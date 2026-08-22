@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="Resources/AppIcon.png" width="128" height="128" alt="Imperator Pong app icon">
+  <img src="Resources/AppIcon.png" width="128" height="128" alt="Imperator RetroPong app icon">
 </p>
 
-<h1 align="center">Imperator Pong</h1>
+<h1 align="center">Imperator RetroPong</h1>
 
 <p align="center">
   Pong that lives in the macOS menu bar. Click the icon, a popover drops down
@@ -11,15 +11,15 @@
 
 ## Install
 
-Download the latest zip from [Releases](https://github.com/goranimperator/imperator-menu-bar-pong/releases),
-unzip, and move `Imperator Pong.app` to `/Applications`.
+Download the latest zip from [Releases](https://github.com/goranimperator/imperator-retropong/releases),
+unzip, and move `Imperator RetroPong.app` to `/Applications`.
 
 The app is signed with a self-signed certificate and is not notarized, so
 Gatekeeper blocks the first launch. Right-click the app and choose **Open**, or
 clear the quarantine flag:
 
 ```bash
-xattr -dr com.apple.quarantine "/Applications/Imperator Pong.app"
+xattr -dr com.apple.quarantine "/Applications/Imperator RetroPong.app"
 ```
 
 Requires macOS 13 or later, Apple silicon. Built and tested on macOS 26 only --
@@ -89,31 +89,31 @@ make build CODESIGN_IDENTITY=-
 Build a zip without touching git or the remote:
 
 ```bash
-make dist VERSION=1.0.0
+make dist VERSION=x.y.z
 ```
 
-Cut a full release -- bumps `Info.plist`, commits, tags `v1.0.0`, pushes, and
+Cut a full release -- bumps `Info.plist`, commits, tags `vx.y.z`, pushes, and
 publishes a GitHub release with the zip attached:
 
 ```bash
-make release VERSION=1.0.0
+make release VERSION=x.y.z
 ```
 
 Requires the [GitHub CLI](https://cli.github.com) (`brew install gh`, then
 `gh auth login`). The working tree must be clean. Tags are plain semver
-(`v1.0.0`); the release title carries the app name. `CFBundleVersion` is set
+(`vx.y.z`); the release title carries the app name. `CFBundleVersion` is set
 from `git rev-list --count HEAD` and is never edited by hand.
 
 ## Layout
 
 | Path | Role |
 |------|------|
-| `Sources/ImperatorPong/main.swift` | Entry point, `.accessory` activation policy |
-| `Sources/ImperatorPong/AppDelegate.swift` | Status bar icon, popover lifecycle |
-| `Sources/ImperatorPong/PopoverContentView.swift` | SwiftUI layout and controls |
-| `Sources/ImperatorPong/GameScene.swift` | SpriteKit physics, AI, scoring, CRT effects |
-| `Sources/ImperatorPong/GameConfig.swift` | Colours, skins, constants, pixel font |
-| `Sources/ImperatorPong/SoundManager.swift` | Square-wave synthesis via AVAudioEngine |
+| `Sources/ImperatorRetroPong/main.swift` | Entry point, `.accessory` activation policy |
+| `Sources/ImperatorRetroPong/AppDelegate.swift` | Status bar icon, popover lifecycle |
+| `Sources/ImperatorRetroPong/PopoverContentView.swift` | SwiftUI layout and controls |
+| `Sources/ImperatorRetroPong/GameScene.swift` | SpriteKit physics, AI, scoring, CRT effects |
+| `Sources/ImperatorRetroPong/GameConfig.swift` | Colours, skins, constants, pixel font |
+| `Sources/ImperatorRetroPong/SoundManager.swift` | Square-wave synthesis via AVAudioEngine |
 | `Resources/` | `Info.plist` and app icon |
 
 A SwiftPM executable with no dependencies. `LSUIElement` is true, so there is no

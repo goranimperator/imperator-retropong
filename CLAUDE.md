@@ -10,7 +10,7 @@ The `Makefile` is the only build path. Do not add a second one.
 make install
 ```
 
-Builds release into `build/Imperator Pong.app`, codesigns, installs to
+Builds release into `build/Imperator RetroPong.app`, codesigns, installs to
 `/Applications`, and launches. `make install` kills any running instance first.
 
 ```bash
@@ -30,13 +30,13 @@ Follow the `imperator-release` skill. Audit first, tag last, never without
 Goran's explicit word in that message.
 
 ```bash
-make dist VERSION=1.0.0
-make release VERSION=1.0.0
+make dist VERSION=x.y.z
+make release VERSION=x.y.z
 ```
 
 `dist` is safe — it touches nothing in git or on the remote. `release` bumps
 `Info.plist`, commits, tags, pushes, and publishes a **GitHub** release with the
-zip attached. The remote is `goranimperator/imperator-menu-bar-pong` on GitHub.
+zip attached. The remote is `goranimperator/imperator-retropong` on GitHub.
 
 Signing uses the self-signed `Imperator Dev` identity, not ad-hoc. The app
 registers a login item via `SMAppService`, and that registration is keyed to the
@@ -71,6 +71,12 @@ This app follows the Imperator brand book (`~/Code/imperator/imperator-apps-bran
 - Dark mode forced via `NSApp.appearance = NSAppearance(named: .darkAqua)`
 - Accent override via `UserDefaults.standard.set(0, forKey: "AppleAccentColor")`
 - Popover width exception: 280pt (game-specific, not standard 340pt)
+- Popover header exception: reads `RetroPong`, not the full `Imperator RetroPong`.
+  Brandbook section 4 wants the app name at `.headline`, but the full name measures
+  131.8pt against the 94pt the 280pt header leaves once the five skin swatches, reset
+  and sound controls are placed, so it truncates. Goran approved dropping the brand
+  prefix here on 2026-08-22. The full name still appears in `CFBundleName`,
+  `CFBundleDisplayName` and the process name.
 - SPM build: no `.xcassets` support, menu bar icon drawn programmatically
 - Code signing: self-signed `Imperator Dev` identity, handled by the Makefile
 

@@ -1,8 +1,8 @@
-APP_NAME    = Imperator Pong
-BINARY_NAME = ImperatorPong
+APP_NAME    = Imperator RetroPong
+BINARY_NAME = ImperatorRetroPong
 BUNDLE      = build/$(APP_NAME).app
 DIST        = dist
-ZIP         = $(DIST)/Imperator-Pong-$(VERSION).zip
+ZIP         = $(DIST)/Imperator-RetroPong-$(VERSION).zip
 BUILD_NUMBER = $(shell git rev-list --count HEAD)
 
 # Self-signed identity, not ad-hoc. The app registers a login item through
