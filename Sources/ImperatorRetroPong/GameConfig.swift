@@ -5,6 +5,8 @@ enum AppColors {
     static let brand = Color(red: 0xa0/255.0, green: 0x18/255.0, blue: 0x18/255.0)
     static let brandFaded = brand.opacity(0.25)
     static let accent = Color(red: 0.43, green: 0.05, blue: 0.05)
+    static let textNormal = Color(red: 0xcf/255.0, green: 0xc8/255.0, blue: 0xbd/255.0)
+    static let textHover = Color(red: 0xf5/255.0, green: 0xef/255.0, blue: 0xe0/255.0)
 
     static let brandNS = NSColor(red: 0xa0/255.0, green: 0x18/255.0, blue: 0x18/255.0, alpha: 1.0)
     static let backgroundNS = NSColor(red: 0.04, green: 0.04, blue: 0.04, alpha: 1)

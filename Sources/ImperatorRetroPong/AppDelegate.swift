@@ -7,6 +7,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var popover: NSPopover!
     private var gameScene: GameScene!
     private var eventMonitor: Any?
+    private let aboutPanelController = AboutPanelController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.appearance = NSAppearance(named: .darkAqua)
@@ -49,6 +50,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let contentView = PopoverContentView(
             gameScene: gameScene,
+            aboutAction: { [weak self] in
+                self?.closePopover()
+                self?.aboutPanelController.show()
+            },
             quitAction: { NSApplication.shared.terminate(nil) }
         )
         let hostingController = NSHostingController(rootView: contentView)

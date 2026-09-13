@@ -16,6 +16,7 @@ extension View {
 
 struct PopoverContentView: View {
     let gameScene: GameScene
+    let aboutAction: () -> Void
     let quitAction: () -> Void
     @State private var currentSkin = Skin.current
 
@@ -63,9 +64,16 @@ struct PopoverContentView: View {
 
             Spacer()
 
-            HoverButton(action: quitAction) {
-                Text("Quit")
-                    .font(.caption)
+            HStack(spacing: 12) {
+                HoverButton(action: aboutAction) {
+                    Text("About")
+                        .font(.caption)
+                }
+
+                HoverButton(action: quitAction) {
+                    Text("Quit")
+                        .font(.caption)
+                }
             }
         }
         .padding(.horizontal, 16)

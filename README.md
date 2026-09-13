@@ -55,6 +55,14 @@ The header row holds the controls:
 | Reset | Restart the match at 0-0 |
 | Speaker | Toggle sound |
 
+The footer row holds the rest:
+
+| Control | What it does |
+|---------|--------------|
+| Open at Login | Register or unregister the app as a login item |
+| About | Open a panel with version, copyright and the website link. Escape closes it |
+| Quit | Quit the app |
+
 The ball speeds up on every paddle hit, from 280 up to a ceiling of 550. Sound is
 generated at runtime as square waves -- there are no audio files in the bundle.
 
@@ -111,6 +119,7 @@ from `git rev-list --count HEAD` and is never edited by hand.
 | `Sources/ImperatorRetroPong/main.swift` | Entry point, `.accessory` activation policy |
 | `Sources/ImperatorRetroPong/AppDelegate.swift` | Status bar icon, popover lifecycle |
 | `Sources/ImperatorRetroPong/PopoverContentView.swift` | SwiftUI layout and controls |
+| `Sources/ImperatorRetroPong/AboutPanel.swift` | About panel: `NSPanel` plus its SwiftUI view |
 | `Sources/ImperatorRetroPong/GameScene.swift` | SpriteKit physics, AI, scoring, CRT effects |
 | `Sources/ImperatorRetroPong/GameConfig.swift` | Colours, skins, constants, pixel font |
 | `Sources/ImperatorRetroPong/SoundManager.swift` | Square-wave synthesis via AVAudioEngine |

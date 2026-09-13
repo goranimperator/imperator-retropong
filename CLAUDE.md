@@ -61,6 +61,7 @@ Menu bar popover app (no Dock icon, `LSUIElement = true`) built with SPM. Entry 
 - `GameScene.swift` — SpriteKit game logic (physics, AI paddle, scoring, CRT visual effects)
 - `GameConfig.swift` — `AppColors` enum, `Skin` enum (color themes), all game constants (field dimensions, physics categories, pixel font patterns)
 - `SoundManager.swift` — singleton, procedurally generates square-wave sounds via AVAudioEngine
+- `AboutPanel.swift` — About panel (`NSPanel`, 300x260), its SwiftUI view, and the bundle strings it reads
 
 **CRT effects** (in `GameScene`): scanlines, RGB subpixel grid, flicker, VHS tracking band, noise overlay, and periodic screen jitter — all layered via SpriteKit nodes on a `crtLayer` at zPosition 100.
 
@@ -77,6 +78,19 @@ This app follows the Imperator brand book (`~/Code/imperator/imperator-apps-bran
   and sound controls are placed, so it truncates. Goran approved dropping the brand
   prefix here on 2026-08-22. The full name still appears in `CFBundleName`,
   `CFBundleDisplayName` and the process name.
+- About panel exceptions (brandbook section 10):
+  - The footer trigger reads `About`, not `About Imperator RetroPong`. The full
+    label measures 132.0pt against the 106.5pt the footer leaves once
+    `Open at Login`, its toggle, the 12pt gap and `Quit` are placed, so it
+    overflows by 25.5pt. Same 280pt constraint as the header exception above.
+  - Section 10.3 puts the website link in brand red and the copyright at
+    `.tertiary`. Both fail WCAG AA on the dark ground: brand red is 2.48:1 and
+    `.tertiary` is 2.14:1 against `backgroundNS`, where 4.5:1 is required. The
+    link uses `textNormal` -> `textHover` with a brand-red underline on hover
+    (11.9:1 / 17.2:1) and the copyright uses `textNormal` at 65% (5.4:1). Brand
+    red stays as the accent, on the underline rather than the glyphs.
+  - The copyright reads `MIT License`, not brandbook 10.4's
+    `All rights reserved` -- this repo ships under MIT, see `LICENSE`.
 - SPM build: no `.xcassets` support, menu bar icon drawn programmatically
 - Code signing: self-signed `Imperator Dev` identity, handled by the Makefile
 
