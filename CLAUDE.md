@@ -24,6 +24,34 @@ compile check with no bundle.
 
 No tests or linter configured.
 
+## Toolchain and SDK stamp
+
+Xcode 27, Swift 6.4, macOS 27 SDK. `Package.swift` is on
+`swift-tools-version: 6.4` with `swiftSettings: [.swiftLanguageMode(.v5)]` on the
+target, because 6.4 turns on Swift 6 language mode and this code is not strict
+concurrency clean yet.
+
+`platforms` stays at `.macOS(.v13)`. This is a public repo, the README promises
+macOS 13, and `LSMinimumSystemVersion` is 13.0 -- raising it would shut those
+users out. The brandbook's "Apps that must still run on older macOS" path applies
+here.
+
+That means the SDK has to be stamped at link time, because SwiftPM writes the
+`sdk` field of `LC_BUILD_VERSION` from the deployment target, not from the SDK it
+compiled against. AppKit picks the control generation from that field, so a plain
+`swift build` ships macOS 13 era controls. `SDK_STAMP` in the `Makefile` passes
+`-Xlinker -platform_version`; do not remove it, and do not raise `platforms` to
+work around it.
+
+Verify after any build that touches the manifest or the Makefile:
+
+```bash
+otool -l "build/Imperator RetroPong.app/Contents/MacOS/ImperatorRetroPong" | awk '/LC_BUILD_VERSION/,/^$/'
+```
+
+`minos 13.0` with `sdk 27.0` is correct. `sdk` equal to `minos` means the stamp
+was lost.
+
 ## Release
 
 Follow the `imperator-release` skill. Audit first, tag last, never without
@@ -91,6 +119,11 @@ This app follows the Imperator brand book (`~/Code/imperator/imperator-apps-bran
     red stays as the accent, on the underline rather than the glyphs.
   - The copyright reads `MIT License`, not brandbook 10.4's
     `All rights reserved` -- this repo ships under MIT, see `LICENSE`.
+- Toggle: `.switch`, `scaleEffect(0.55)`, `tint(AppColors.brand)`, and **no**
+  `.frame`. The switch is 54x24pt on macOS 27, so a hardcoded frame only adds
+  invisible padding while reading as a size guarantee it does not give. The
+  control must draw as a wide capsule with an oval knob sitting inside the
+  track; a round knob means the SDK stamp above was lost.
 - SPM build: no `.xcassets` support, menu bar icon drawn programmatically
 - Code signing: self-signed `Imperator Dev` identity, handled by the Makefile
 

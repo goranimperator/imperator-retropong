@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.4
 
 import PackageDescription
 
@@ -10,7 +10,8 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "ImperatorRetroPong",
-            path: "Sources/ImperatorRetroPong"
+            path: "Sources/ImperatorRetroPong",
+            swiftSettings: [.swiftLanguageMode(.v5)]
         )
     ]
 )

@@ -22,7 +22,7 @@ clear the quarantine flag:
 xattr -dr com.apple.quarantine "/Applications/Imperator RetroPong.app"
 ```
 
-Requires macOS 13 or later, Apple silicon. Built and tested on macOS 26 only --
+Requires macOS 13 or later, Apple silicon. Built and tested on macOS 27 only --
 older versions are expected to work but have not been verified.
 
 Install at your own risk. The app is not notarized and carries no Apple
@@ -91,6 +91,25 @@ Signing uses the self-signed `Imperator Dev` identity by default. Override it:
 ```bash
 make build CODESIGN_IDENTITY=-
 ```
+
+Built with Xcode 27 and Swift 6.4 against the macOS 27 SDK. The minimum stays at
+macOS 13.
+
+Those two facts fight each other by default. AppKit decides which generation of
+a control to draw from the `sdk` field of the binary's `LC_BUILD_VERSION`, and
+SwiftPM writes that field from the deployment target in `Package.swift` rather
+than from the SDK it compiled against. A plain `swift build` therefore stamps
+`sdk 13.0` and the app draws macOS 13 era controls on macOS 27 -- most visibly a
+switch with a round knob that reads as overflowing its track. The `Makefile`
+stamps the real SDK at link time instead, so the minimum stays low and the
+controls stay current:
+
+```bash
+otool -l "build/Imperator RetroPong.app/Contents/MacOS/ImperatorRetroPong" | awk '/LC_BUILD_VERSION/,/^$/'
+```
+
+That should report `minos 13.0` and `sdk 27.0`. If `sdk` equals `minos`, the
+stamp was lost and every control in the app is a generation behind.
 
 ## Release
 

@@ -5,6 +5,17 @@ DIST        = dist
 ZIP         = $(DIST)/Imperator-RetroPong-$(VERSION).zip
 BUILD_NUMBER = $(shell git rev-list --count HEAD)
 
+# AppKit picks the control generation from the sdk field of LC_BUILD_VERSION.
+# SwiftPM stamps that field with the deployment target from Package.swift, not
+# with the SDK it compiled against, so a plain `swift build` ships macOS 13 era
+# controls on macOS 27. Stamping it here keeps the macOS 13 minimum and still
+# gets the current controls. Verify with:
+#   otool -l <binary> | awk '/LC_BUILD_VERSION/,/^$$/'
+MIN_MACOS   = 13.0
+SDK_VERSION = $(shell xcrun --sdk macosx --show-sdk-version)
+SDK_STAMP   = -Xlinker -platform_version -Xlinker macos \
+              -Xlinker $(MIN_MACOS) -Xlinker $(SDK_VERSION)
+
 # Self-signed identity, not ad-hoc. The app registers a login item through
 # SMAppService, and that registration is keyed to the bundle's designated
 # requirement. Ad-hoc signing mints a new cdhash on every build, so every
@@ -17,7 +28,7 @@ CODESIGN_IDENTITY ?= Imperator Dev
 all: build
 
 build:
-	swift build -c release
+	swift build -c release $(SDK_STAMP)
 	@rm -rf "$(BUNDLE)"
 	@mkdir -p "$(BUNDLE)/Contents/MacOS" "$(BUNDLE)/Contents/Resources"
 	cp ".build/release/$(BINARY_NAME)" "$(BUNDLE)/Contents/MacOS/$(BINARY_NAME)"

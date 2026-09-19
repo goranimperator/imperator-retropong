@@ -195,7 +195,6 @@ struct LaunchAtLoginToggle: View {
             Toggle("", isOn: $isEnabled)
                 .toggleStyle(.switch)
                 .scaleEffect(0.55)
-                .frame(width: 36, height: 20)
                 .tint(AppColors.brand)
                 .labelsHidden()
         }
