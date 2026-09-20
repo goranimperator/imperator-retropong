@@ -34,9 +34,23 @@ struct PopoverContentView: View {
     }
 
     private var headerView: some View {
-        HStack {
+        HStack(alignment: .center, spacing: 8) {
+            // The app's own menu bar glyph at 16pt, left of the name, the way
+            // imperator-widget-clock and the other popover apps do it.
+            // Brandbook 16.1 keeps the sigil out of the header; this is the
+            // app's icon, not the sigil.
+            Image(nsImage: PopoverContentView.headerIcon)
+                .renderingMode(.template)
+                .foregroundStyle(.primary)
+
             Text("RetroPong")
                 .font(.headline)
+                // Without this the HStack hands the name a narrower proposal
+                // than its ideal and it renders as "RetroP...", even though the
+                // row measures 44pt of slack. The name is 68pt at .headline and
+                // the header leaves 78pt once the icon and the controls are
+                // placed, so pinning it to its ideal fits.
+                .fixedSize()
 
             Spacer()
 
@@ -58,22 +72,29 @@ struct PopoverContentView: View {
         .padding(.vertical, 12)
     }
 
+    /// Drawn once. The header is rebuilt on every skin change and the glyph
+    /// never varies.
+    private static let headerIcon = StatusItemIcon.make(size: 16)
+
     private var footerView: some View {
-        HStack {
+        HStack(spacing: 12) {
             LaunchAtLoginToggle()
 
             Spacer()
 
-            HStack(spacing: 12) {
-                HoverButton(action: aboutAction) {
-                    Text("About")
-                        .font(.caption)
-                }
+            // Brandbook 10.1 names this "About Imperator RetroPong". The row
+            // already carries the login toggle inside 280pt, so the full name
+            // is the tooltip and the button reads "About", the way the other
+            // popover apps do it.
+            HoverButton(action: aboutAction) {
+                Text("About")
+                    .font(.caption)
+            }
+            .help("About Imperator RetroPong")
 
-                HoverButton(action: quitAction) {
-                    Text("Quit")
-                        .font(.caption)
-                }
+            HoverButton(action: quitAction) {
+                Text("Quit")
+                    .font(.caption)
             }
         }
         .padding(.horizontal, 16)

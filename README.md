@@ -5,7 +5,7 @@
 <h1 align="center">Imperator RetroPong</h1>
 
 <p align="center">
-  Pong that lives in the macOS menu bar. Click the icon, a popover drops down
+  Pong that lives in the macOS menu bar. Click the icon, a panel drops down
   with a CRT-filtered court, and you play until someone reaches five.
 </p>
 
@@ -34,15 +34,16 @@ warranty, under the [MIT license](LICENSE).
 None. The app requests no Accessibility, Input Monitoring, Automation, or
 privacy-gated grants, and declares no `NSUsage` keys.
 
-The one system integration is **Open at Login**, the toggle in the popover
+The one system integration is **Open at Login**, the toggle in the panel
 footer. It calls `SMAppService.mainApp.register()`, which adds the app to Login
 Items in System Settings. macOS may show a notification the first time. Turning
 the toggle off unregisters it.
 
 ## Use
 
-Click the menu bar icon to open the popover. The game starts as soon as it is
+Click the menu bar icon to open the panel. The game starts as soon as it is
 visible and pauses the moment it closes, so nothing runs in the background.
+Escape closes it, and so does a click anywhere outside.
 
 **Move the mouse** left and right over the court to drive the bottom paddle. The
 AI plays the top one. First to five points wins.
@@ -135,10 +136,13 @@ from `git rev-list --count HEAD` and is never edited by hand.
 
 | Path | Role |
 |------|------|
-| `Sources/ImperatorRetroPong/main.swift` | Entry point, `.accessory` activation policy |
-| `Sources/ImperatorRetroPong/AppDelegate.swift` | Status bar icon, popover lifecycle |
-| `Sources/ImperatorRetroPong/PopoverContentView.swift` | SwiftUI layout and controls |
+| `Sources/ImperatorRetroPong/AppMain.swift` | Entry point, `.accessory` activation policy, unknown-flag guard |
+| `Sources/ImperatorRetroPong/AppDelegate.swift` | Status bar icon, panel lifecycle |
+| `Sources/ImperatorRetroPong/MenuBarPanel.swift` | The menu bar panel itself: corner, placement, dismissal |
+| `Sources/ImperatorRetroPong/StatusItemIcon.swift` | The menu bar glyph, shared by the status item and the header |
+| `Sources/ImperatorRetroPong/PopoverContentView.swift` | SwiftUI layout and controls inside the panel |
 | `Sources/ImperatorRetroPong/AboutPanel.swift` | About panel: `NSPanel` plus its SwiftUI view |
+| `Sources/ImperatorRetroPong/AboutCheck.swift` | `--about-check`, measures the panel against the spec |
 | `Sources/ImperatorRetroPong/GameScene.swift` | SpriteKit physics, AI, scoring, CRT effects |
 | `Sources/ImperatorRetroPong/GameConfig.swift` | Colours, skins, constants, pixel font |
 | `Sources/ImperatorRetroPong/SoundManager.swift` | Square-wave synthesis via AVAudioEngine |
@@ -148,6 +152,13 @@ A SwiftPM executable with no dependencies. `LSUIElement` is true, so there is no
 Dock icon and no menu bar menu -- the status item is the entire interface. The
 game is a SpriteKit scene hosted inside SwiftUI through `NSViewRepresentable`;
 mouse input is captured with a local event monitor and forwarded to the scene.
+
+The surface under the menu bar is a borderless `NSPanel` the app draws itself,
+not an `NSPopover`. macOS 27 draws its own menu bar panels as plain rounded
+rectangles with no arrow and no open or close animation, and `NSPopover` draws
+neither that shape nor that corner and exposes no radius to set. The measured
+numbers behind that, and the reason the constant is not the number it draws, are
+in `MenuBarPanel.swift`.
 
 Because SwiftPM does not compile asset catalogs, the menu bar icon is drawn
 programmatically in `AppDelegate.setupStatusItem()` rather than shipped as an

@@ -22,7 +22,15 @@ swift build
 `make run` builds and opens the bundle in place; `swift build` alone is a debug
 compile check with no bundle.
 
-No tests or linter configured.
+No tests or linter configured. The one self-check is:
+
+```bash
+"build/Imperator RetroPong.app/Contents/MacOS/ImperatorRetroPong" --about-check
+```
+
+It builds the real About panel and measures it against brandbook section 10:
+size, style mask, `hidesOnDeactivate`, and that the background is the standard
+window background rather than a painted colour. Prints `ABOUT_PANEL_OK`.
 
 ## Toolchain and SDK stamp
 
@@ -77,19 +85,27 @@ hand.
 
 ## Architecture
 
-Menu bar popover app (no Dock icon, `LSUIElement = true`) built with SPM. Entry point is `main.swift` which creates `NSApplication` with `.accessory` policy.
+Menu bar panel app (no Dock icon, `LSUIElement = true`) built with SPM. Entry point is `AppMain.swift`, a `@main` struct that creates `NSApplication` with `.accessory` policy.
 
-**App lifecycle**: `main.swift` → `AppDelegate` → creates `NSStatusItem` (menu bar icon) + `NSPopover` containing `PopoverContentView`.
+**App lifecycle**: `AppMain.swift` → `AppDelegate` → creates `NSStatusItem` (menu bar icon) + `MenuBarPanel` containing `PopoverContentView`.
+
+An unrecognised flag exits 2 instead of falling through to `NSApplication.run()`.
+Without that guard, running a new check against an older installed binary
+launches a second copy of the app with a second menu bar icon.
 
 **Rendering stack**: The game itself is a SpriteKit `GameScene` rendered inside `PopoverContentView` via `GameSKView` (NSViewRepresentable wrapping `GameHostView`). Mouse input is captured via `NSEvent.addLocalMonitorForEvents` in `GameHostView` and forwarded to the scene.
 
 **Key files**:
-- `AppDelegate.swift` — status bar icon, popover lifecycle, dark mode + accent color setup
+- `AppDelegate.swift` — status bar icon, panel lifecycle, dark mode + accent color setup
+- `MenuBarPanel.swift` — the menu bar surface: borderless `NSPanel`, its corner, placement under the status item, click-outside and Escape dismissal
+- `StatusItemIcon.swift` — the menu bar glyph, one factory shared by the status item (18pt) and the panel header (16pt)
 - `PopoverContentView.swift` — SwiftUI layout (header/game/footer), all UI components (`HoverButton`, `LaunchAtLoginToggle`, `SkinSwatch`, `SoundButton`, `ResetButton`), and View extensions
 - `GameScene.swift` — SpriteKit game logic (physics, AI paddle, scoring, CRT visual effects)
 - `GameConfig.swift` — `AppColors` enum, `Skin` enum (color themes), all game constants (field dimensions, physics categories, pixel font patterns)
 - `SoundManager.swift` — singleton, procedurally generates square-wave sounds via AVAudioEngine
-- `AboutPanel.swift` — About panel (`NSPanel`, 300x260), its SwiftUI view, and the bundle strings it reads
+- `AboutPanel.swift` — About panel (`NSPanel`, 300x260) and its SwiftUI view, built the same way as imperator-widget-clock's
+- `AboutCheck.swift` — `--about-check`, which builds the real panel and measures it against brandbook section 10
+- `AppMain.swift` — `@main` entry point, `.accessory` policy, and the guard that stops an unknown flag from launching a second copy
 
 **CRT effects** (in `GameScene`): scanlines, RGB subpixel grid, flicker, VHS tracking band, noise overlay, and periodic screen jitter — all layered via SpriteKit nodes on a `crtLayer` at zPosition 100.
 
@@ -99,8 +115,16 @@ This app follows the Imperator brand book (`~/Code/imperator/imperator-apps-bran
 - `AppColors.brand` (`#A01818`) for all accent colors — never use bare `Color.accentColor`
 - Dark mode forced via `NSApp.appearance = NSAppearance(named: .darkAqua)`
 - Accent override via `UserDefaults.standard.set(0, forKey: "AppleAccentColor")`
-- Popover width exception: 280pt (game-specific, not standard 340pt)
-- Popover header exception: reads `RetroPong`, not the full `Imperator RetroPong`.
+- Panel width exception: 280pt (game-specific, not standard 340pt)
+- The menu bar surface is a `MenuBarPanel`, not an `NSPopover`. Brandbook 23
+  step 5 asks for `NSPopover` with `.transient` and a global mouse-down
+  monitor; macOS 27 does not draw its own menu bar panels that way, and
+  `NSPopover` exposes no radius to correct it with. The corner constant, the
+  reason it is higher than the radius it draws, and the captures behind both
+  are documented in `MenuBarPanel.swift`. Do not change them, and do not go
+  back to `NSPopover`. The panel owns the click-outside monitor and the
+  Escape monitor; `AppDelegate` keeps none of its own.
+- Panel header exception: reads `RetroPong`, not the full `Imperator RetroPong`.
   Brandbook section 4 wants the app name at `.headline`, but the full name measures
   131.8pt against the 94pt the 280pt header leaves once the five skin swatches, reset
   and sound controls are placed, so it truncates. Goran approved dropping the brand
@@ -111,12 +135,24 @@ This app follows the Imperator brand book (`~/Code/imperator/imperator-apps-bran
     label measures 132.0pt against the 106.5pt the footer leaves once
     `Open at Login`, its toggle, the 12pt gap and `Quit` are placed, so it
     overflows by 25.5pt. Same 280pt constraint as the header exception above.
-  - Section 10.3 puts the website link in brand red and the copyright at
-    `.tertiary`. Both fail WCAG AA on the dark ground: brand red is 2.48:1 and
-    `.tertiary` is 2.14:1 against `backgroundNS`, where 4.5:1 is required. The
-    link uses `textNormal` -> `textHover` with a brand-red underline on hover
-    (11.9:1 / 17.2:1) and the copyright uses `textNormal` at 65% (5.4:1). Brand
-    red stays as the accent, on the underline rather than the glyphs.
+  - The panel uses the **standard macOS window background**. It sets
+    `appearance = .darkAqua` and nothing else: no `backgroundColor`, no
+    `.background` on the hosted SwiftUI view. Painting a flat near-black there
+    copies the system's job and reads as a different material next to real
+    windows. Section 10.2's "Background: Dark (matches app appearance)" means
+    this, not a hand-mixed colour.
+  - `hidesOnDeactivate = false` on the panel. An `NSPanel` hides itself when
+    its app deactivates, and an `.accessory` app deactivates the moment
+    anything else is clicked, so at the default the About panel vanishes behind
+    the first click outside it instead of staying up until it is closed.
+  - Colours follow section 10.3 and imperator-widget-clock exactly:
+    `.secondary` for the version, `.tertiary` for the copyright, brand red for
+    the website link. Measured against the standard dark window background
+    (`#1E1E1E`): headline 16.7:1, version 5.9:1, copyright 2.28:1, link 2.09:1.
+    The last two are below the 4.5:1 WCAG AA wants for normal text. Goran chose
+    matching widget-clock over the contrast fix on 2026-09-19, so do not
+    "correct" them back without asking; raising them means changing the
+    brandbook for every app, not this one on its own.
   - The copyright reads `MIT License`, not brandbook 10.4's
     `All rights reserved` -- this repo ships under MIT, see `LICENSE`.
 - Toggle: `.switch`, `scaleEffect(0.55)`, `tint(AppColors.brand)`, and **no**

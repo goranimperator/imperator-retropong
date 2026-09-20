@@ -2,12 +2,11 @@ import AppKit
 import SpriteKit
 import SwiftUI
 
+@MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
-    private var popover: NSPopover!
+    private var panel: MenuBarPanel!
     private var gameScene: GameScene!
-    private var eventMonitor: Any?
-    private let aboutPanelController = AboutPanelController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.appearance = NSAppearance(named: .darkAqua)
@@ -24,15 +23,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         guard let button = statusItem.button else { return }
 
-        let image = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { rect in
-            NSColor.black.setFill()
-            NSBezierPath(roundedRect: NSRect(x: 3, y: 4, width: 12, height: 2), xRadius: 1, yRadius: 1).fill()
-            NSBezierPath(ovalIn: NSRect(x: 7.5, y: 8, width: 3, height: 3)).fill()
-            NSBezierPath(roundedRect: NSRect(x: 1, y: 13, width: 12, height: 2), xRadius: 1, yRadius: 1).fill()
-            return true
-        }
-        image.isTemplate = true
-        button.image = image
+        button.image = StatusItemIcon.make()
 
         button.target = self
         button.action = #selector(togglePopover)
@@ -44,35 +35,34 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func setupPopover() {
-        popover = NSPopover()
-        popover.behavior = .transient
-        popover.animates = true
-
         let contentView = PopoverContentView(
             gameScene: gameScene,
             aboutAction: { [weak self] in
                 self?.closePopover()
-                self?.aboutPanelController.show()
+                AboutPanelController.show()
             },
             quitAction: { NSApplication.shared.terminate(nil) }
         )
-        let hostingController = NSHostingController(rootView: contentView)
-        hostingController.preferredContentSize = NSSize(
-            width: GameConfig.sceneWidth,
-            height: GameConfig.sceneHeight + 86
-        )
-        popover.contentSize = hostingController.preferredContentSize
-        popover.contentViewController = hostingController
+        // A MenuBarPanel rather than an NSPopover. macOS 27 draws its own menu
+        // bar panels as plain rounded rectangles: a 17.50 pt corner, no arrow
+        // and no animation, measured off Control Centre's Wi-Fi panel. An
+        // NSPopover draws none of that and exposes none of it for adjustment.
+        panel = MenuBarPanel(content: contentView, width: GameConfig.sceneWidth)
+        // The scene has a fixed size, so the height is stated rather than
+        // measured: a SpriteKit view has no fitting size to ask for.
+        panel.contentHeight = { GameConfig.sceneHeight + 86 }
     }
 
     private func setupEventMonitor() {
-        eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
-            self?.closePopover()
-        }
+        // The click-outside dismissal lives in MenuBarPanel, which owns the
+        // same monitor plus the exception for the status item's own click.
+        // Pausing the game on close is the panel's business too, so it hangs
+        // off onClose rather than off a second monitor.
+        panel.onClose = { [weak self] in self?.gameScene.isPaused = true }
     }
 
     @objc private func togglePopover() {
-        if popover.isShown {
+        if panel.isShown {
             closePopover()
         } else {
             showPopover()
@@ -81,13 +71,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showPopover() {
         guard let button = statusItem.button else { return }
-        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        panel.show(from: button)
         gameScene.isPaused = false
-        popover.contentViewController?.view.window?.makeKey()
+        NSApp.activate(ignoringOtherApps: true)
+        panel.makeKey()
     }
 
     private func closePopover() {
-        popover.performClose(nil)
+        panel.close()
         gameScene.isPaused = true
     }
 }
