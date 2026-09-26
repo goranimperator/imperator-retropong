@@ -160,9 +160,10 @@ neither that shape nor that corner and exposes no radius to set. The measured
 numbers behind that, and the reason the constant is not the number it draws, are
 in `MenuBarPanel.swift`.
 
-Because SwiftPM does not compile asset catalogs, the menu bar icon is drawn
-programmatically in `AppDelegate.setupStatusItem()` rather than shipped as an
-image.
+Because SwiftPM does not compile asset catalogs, the menu bar glyph is drawn in
+code rather than shipped as an image. `StatusItemIcon.make(size:)` is the one
+factory for it, used at 18pt for the status item and at 16pt beside the name in
+the panel header.
 
 ## License
 

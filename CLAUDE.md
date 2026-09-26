@@ -165,4 +165,4 @@ This app follows the Imperator brand book (`~/Code/imperator/imperator-apps-bran
 
 ## SPM Notes
 
-Since this is an SPM project (not Xcode), asset catalogs don't compile. The menu bar icon is drawn programmatically in `AppDelegate.setupStatusItem()`. AccentColor.colorset is not applicable — accent is overridden via UserDefaults only.
+Since this is an SPM project (not Xcode), asset catalogs don't compile. The menu bar glyph is drawn in code by `StatusItemIcon.make(size:)`, at 18pt for the status item and 16pt for the panel header; `AppDelegate.setupStatusItem()` only assigns it. AccentColor.colorset is not applicable — accent is overridden via UserDefaults only.

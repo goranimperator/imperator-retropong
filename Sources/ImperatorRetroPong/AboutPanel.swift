@@ -150,7 +150,6 @@ struct AboutView: View {
             }
             .buttonStyle(.plain)
             .onHover { isLinkHovered = $0 }
-            .cursor(.pointingHand)
             .help("Open goranimperator.com")
         }
         .padding(24)
