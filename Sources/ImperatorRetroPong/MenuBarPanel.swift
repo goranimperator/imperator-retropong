@@ -71,7 +71,15 @@ final class MenuBarPanel: NSPanel {
         // living above other apps.
         level = .popUpMenu
         isFloatingPanel = true
-        hidesOnDeactivate = true
+        // False, even though this panel is transient. At true AppKit hides it
+        // itself the moment the app deactivates, without going through close():
+        // onClose never fires, so the game keeps running, the monitors stay
+        // installed, and isVisible flips behind the owner's back. show() then
+        // orders a window AppKit has hidden for deactivation, the activation
+        // that follows re-applies that hidden state, and the panel never comes
+        // back until the app is restarted. Dismissal is the click monitor's
+        // job below, which routes through close() and keeps the state honest.
+        hidesOnDeactivate = false
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         backgroundColor = .clear
         isOpaque = false
@@ -96,6 +104,22 @@ final class MenuBarPanel: NSPanel {
         container.layer?.masksToBounds = true
 
         host.translatesAutoresizingMaskIntoConstraints = false
+        contentView = container
+        attachHost()
+    }
+
+    /// Puts the hosted content back in the panel.
+    ///
+    /// The content is detached on close and reattached here, so the views
+    /// inside it see `viewDidMoveToWindow` on every open. An `SKView` stops its
+    /// render loop when its window is ordered out and does not start again when
+    /// the same window comes back: it only recovers by moving between windows.
+    /// `NSPopover` got that for free by building a window per show. This panel
+    /// reuses one window, so without the detach the game draws a single frozen
+    /// frame from the second open onward, while the controls over it still
+    /// respond. Pausing the scene or the view is not enough; both were tried.
+    private func attachHost() {
+        guard host.superview == nil else { return }
         container.addSubview(host)
         NSLayoutConstraint.activate([
             host.leadingAnchor.constraint(equalTo: container.leadingAnchor),
@@ -103,7 +127,6 @@ final class MenuBarPanel: NSPanel {
             host.topAnchor.constraint(equalTo: container.topAnchor),
             host.bottomAnchor.constraint(equalTo: container.bottomAnchor),
         ])
-        contentView = container
     }
 
     var isShown: Bool { isVisible }
@@ -112,6 +135,7 @@ final class MenuBarPanel: NSPanel {
     func show(from button: NSStatusBarButton) {
         guard let buttonWindow = button.window else { return }
         anchor = button
+        attachHost()
 
         let height = contentHeight?() ?? host.fittingSize.height
         setContentSize(NSSize(width: frame.width, height: height))
@@ -137,6 +161,9 @@ final class MenuBarPanel: NSPanel {
     func close(_ sender: Any? = nil) {
         stopMonitoring()
         orderOut(nil)
+        // Detach so the next open moves the content back into a window. See
+        // attachHost().
+        host.removeFromSuperview()
         onClose?()
     }
 

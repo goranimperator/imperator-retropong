@@ -5,18 +5,15 @@ import SwiftUI
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
-    private var panel: MenuBarPanel!
-    private var gameScene: GameScene!
+    private var panel: MenuBarPanel?
+    private var gameScene: GameScene?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.appearance = NSAppearance(named: .darkAqua)
         UserDefaults.standard.set(0, forKey: "AppleAccentColor")
         ProcessInfo.processInfo.setValue("Imperator RetroPong", forKey: "processName")
 
-        setupGameScene()
-        setupPopover()
         setupStatusItem()
-        setupEventMonitor()
     }
 
     private func setupStatusItem() {
@@ -29,56 +26,61 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         button.action = #selector(togglePopover)
     }
 
-    private func setupGameScene() {
-        gameScene = GameScene(size: CGSize(width: GameConfig.sceneWidth, height: GameConfig.sceneHeight))
-        gameScene.scaleMode = .aspectFill
-    }
-
-    private func setupPopover() {
-        let contentView = PopoverContentView(
-            gameScene: gameScene,
-            aboutAction: { [weak self] in
-                self?.closePopover()
-                AboutPanelController.show()
-            },
-            quitAction: { NSApplication.shared.terminate(nil) }
-        )
-        // A MenuBarPanel rather than an NSPopover. macOS 27 draws its own menu
-        // bar panels as plain rounded rectangles: a 17.50 pt corner, no arrow
-        // and no animation, measured off Control Centre's Wi-Fi panel. An
-        // NSPopover draws none of that and exposes none of it for adjustment.
-        panel = MenuBarPanel(content: contentView, width: GameConfig.sceneWidth)
-        // The scene has a fixed size, so the height is stated rather than
-        // measured: a SpriteKit view has no fitting size to ask for.
-        panel.contentHeight = { GameConfig.sceneHeight + 86 }
-    }
-
-    private func setupEventMonitor() {
-        // The click-outside dismissal lives in MenuBarPanel, which owns the
-        // same monitor plus the exception for the status item's own click.
-        // Pausing the game on close is the panel's business too, so it hangs
-        // off onClose rather than off a second monitor.
-        panel.onClose = { [weak self] in self?.gameScene.isPaused = true }
-    }
-
     @objc private func togglePopover() {
-        if panel.isShown {
+        if panel?.isShown == true {
             closePopover()
         } else {
             showPopover()
         }
     }
 
+    /// Builds the scene, the content and the window from scratch on every open.
+    ///
+    /// An `SKView` stops its render loop when its window is ordered out, and it
+    /// does not start again in that same window: not by unpausing the scene,
+    /// not by unpausing the view, and not by detaching and reattaching the
+    /// content. All three were measured. `NSPopover` never hit this because it
+    /// built a window per show; this panel has to do the same. The cost is that
+    /// the board resets when the panel is reopened, which it already did on
+    /// every close by pausing.
     private func showPopover() {
         guard let button = statusItem.button else { return }
-        panel.show(from: button)
-        gameScene.isPaused = false
+
+        let scene = GameScene(size: CGSize(width: GameConfig.sceneWidth, height: GameConfig.sceneHeight))
+        scene.scaleMode = .aspectFill
+        gameScene = scene
+
+        let contentView = PopoverContentView(
+            gameScene: scene,
+            aboutAction: { [weak self] in
+                self?.closePopover()
+                AboutPanelController.show()
+            },
+            quitAction: { NSApplication.shared.terminate(nil) }
+        )
+        let panel = MenuBarPanel(content: contentView, width: GameConfig.sceneWidth)
+        // The scene has a fixed size, so the height is stated rather than
+        // measured: a SpriteKit view has no fitting size to ask for.
+        panel.contentHeight = { GameConfig.sceneHeight + 86 }
+        panel.onClose = { [weak self] in self?.releasePanel() }
+        self.panel = panel
+
+        // Activate first. Ordering a window front while the app is still
+        // inactive leaves the activation to undo it.
         NSApp.activate(ignoringOtherApps: true)
+        panel.show(from: button)
         panel.makeKey()
     }
 
     private func closePopover() {
-        panel.close()
-        gameScene.isPaused = true
+        panel?.close()
+    }
+
+    /// Drops the window and the scene once the panel is down, so the next open
+    /// builds both again rather than reusing a view that will not draw.
+    private func releasePanel() {
+        gameScene?.isPaused = true
+        panel = nil
+        gameScene = nil
     }
 }
