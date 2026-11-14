@@ -80,6 +80,6 @@ release: check-version
 	git push origin v$(VERSION)
 	gh release create v$(VERSION) \
 		--title "$(APP_NAME) $(VERSION)" \
-		--notes "Pong in the macOS menu bar, with CRT scanlines, five colour skins and Atari-style square-wave sound. Signed with a self-signed certificate and not notarized, so Gatekeeper blocks the first launch: right-click the app and choose Open, or run \`xattr -dr com.apple.quarantine \"/Applications/$(APP_NAME).app\"\`." \
+		--notes "Pong in the macOS menu bar, with CRT scanlines, five colour skins and Atari-style square-wave sound. The app checks GitHub once a day for a newer release and shows it in the panel; updating is still by hand. Signed with a self-signed certificate and not notarized, so Gatekeeper blocks the first launch, and the first launch of every downloaded update: click Done on the warning, then run \`xattr -dr com.apple.quarantine \"/Applications/$(APP_NAME).app\"\`." \
 		"$(ZIP)#$(APP_NAME) $(VERSION) (macOS)"
 	@echo "Released v$(VERSION)"

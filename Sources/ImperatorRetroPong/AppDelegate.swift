@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SpriteKit
 import SwiftUI
 
@@ -7,6 +8,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var panel: MenuBarPanel?
     private var gameScene: GameScene?
+    private var updateStatusObserver: AnyCancellable?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.appearance = NSAppearance(named: .darkAqua)
@@ -14,6 +16,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         ProcessInfo.processInfo.setValue("Imperator RetroPong", forKey: "processName")
 
         setupStatusItem()
+
+        UpdateChecker.shared.start()
+        // The update row above the footer appears and disappears with the
+        // check's result, and that can happen while the panel is up: Check Now
+        // finds a release, or the launch check lands after the first open. The
+        // panel's height comes from its content, so show it again to refit it
+        // and pin its top edge back under the menu bar. A borderless window
+        // that grew on its own would grow from its bottom-left corner, up into
+        // the menu bar. Deferred a turn because @Published reports the change
+        // before the property holds it.
+        updateStatusObserver = UpdateChecker.shared.$status
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.refitPanel() }
+    }
+
+    private func refitPanel() {
+        guard let panel, panel.isShown, let button = statusItem.button else { return }
+        panel.show(from: button)
     }
 
     private func setupStatusItem() {
@@ -58,10 +79,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             },
             quitAction: { NSApplication.shared.terminate(nil) }
         )
+        // No contentHeight: the panel measures its content. The game view has a
+        // fixed frame in PopoverContentView, so the fitting size is exact, and it
+        // takes in the update row and the footer's update controls without a
+        // number here going stale every time the footer changes.
         let panel = MenuBarPanel(content: contentView, width: GameConfig.sceneWidth)
-        // The scene has a fixed size, so the height is stated rather than
-        // measured: a SpriteKit view has no fitting size to ask for.
-        panel.contentHeight = { GameConfig.sceneHeight + 86 }
         panel.onClose = { [weak self] in self?.releasePanel() }
         self.panel = panel
 

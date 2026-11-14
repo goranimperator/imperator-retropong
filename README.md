@@ -15,12 +15,16 @@ Download the latest zip from [Releases](https://github.com/goranimperator/impera
 unzip, and move `Imperator RetroPong.app` to `/Applications`.
 
 The app is signed with a self-signed certificate and is not notarized, so
-Gatekeeper blocks the first launch. Right-click the app and choose **Open**, or
-clear the quarantine flag:
+Gatekeeper blocks the first launch. macOS shows a warning with only **Move to
+Trash** and **Done**. Click **Done**, then clear the quarantine flag:
 
 ```bash
 xattr -dr com.apple.quarantine "/Applications/Imperator RetroPong.app"
 ```
+
+Type the command rather than pasting it from a chat window. A pasted line can
+come out with curly quotes or a non-breaking space, and `xattr` then answers
+`No such file`.
 
 Requires macOS 13 or later, Apple silicon. Built and tested on macOS 27 only --
 older versions are expected to work but have not been verified.
@@ -31,13 +35,14 @@ warranty, under the [MIT license](LICENSE).
 
 ## Permissions
 
-None. The app requests no Accessibility, Input Monitoring, Automation, or
-privacy-gated grants, and declares no `NSUsage` keys.
+No Accessibility, Input Monitoring, Automation or other privacy-gated grants,
+and no `NSUsage` keys.
 
-The one system integration is **Open at Login**, the toggle in the panel
-footer. It calls `SMAppService.mainApp.register()`, which adds the app to Login
-Items in System Settings. macOS may show a notification the first time. Turning
-the toggle off unregisters it.
+| What | When | Details |
+|------|------|---------|
+| **Network** | One request a day | The update check: one `GET` a day to `api.github.com/repos/goranimperator/imperator-retropong/releases/latest`. It sends nothing but the app's name and version as the User-Agent GitHub requires. No telemetry, no analytics, nothing about you. Turn it off with **Check for updates** in the panel footer. |
+| **Notifications** | Only when an update is found | The first time the check finds a newer release, macOS asks whether the app may notify you. Allow it and you get one notification per new version. Deny it and the row in the panel still shows. |
+| **Open at Login** | When you turn it on | The toggle in the panel footer calls `SMAppService.mainApp.register()`, which adds the app to Login Items in System Settings. macOS may show a notification the first time. Turning the toggle off unregisters it. |
 
 ## Use
 
@@ -56,13 +61,22 @@ The header row holds the controls:
 | Reset | Restart the match at 0-0 |
 | Speaker | Toggle sound |
 
-The footer row holds the rest:
+The footer holds the rest:
 
 | Control | What it does |
 |---------|--------------|
 | Open at Login | Register or unregister the app as a login item |
 | About | Open a panel with version, copyright and the website link. Escape closes it |
 | Quit | Quit the app |
+| Check for updates | Turn the daily update check on or off. On by default |
+| Check Now | Check for a newer release right away, even with the switch off |
+
+**Updates.** Once a day the app asks GitHub whether a newer release is out. When
+one is, a row appears above the footer with a **Download** button, and macOS
+shows one notification for that version. Both open the release page; nothing
+installs by itself. The line under **Check Now** shows the last result. A
+downloaded update meets Gatekeeper exactly like the first install, so click
+**Done** on the warning and run the `xattr` command from Install again.
 
 The ball speeds up on every paddle hit, from 280 up to a ceiling of 550. Sound is
 generated at runtime as square waves -- there are no audio files in the bundle.
@@ -109,8 +123,10 @@ controls stay current:
 otool -l "build/Imperator RetroPong.app/Contents/MacOS/ImperatorRetroPong" | awk '/LC_BUILD_VERSION/,/^$/'
 ```
 
-That should report `minos 13.0` and `sdk 27.0`. If `sdk` equals `minos`, the
-stamp was lost and every control in the app is a generation behind.
+That should report `minos 13.0` and an `sdk` equal to the installed SDK, which
+`xcrun --sdk macosx --show-sdk-version` prints (27.2 at the time of writing). If
+`sdk` equals `minos`, the stamp was lost and every control in the app is a
+generation behind.
 
 ## Release
 
@@ -143,6 +159,8 @@ from `git rev-list --count HEAD` and is never edited by hand.
 | `Sources/ImperatorRetroPong/PopoverContentView.swift` | SwiftUI layout and controls inside the panel |
 | `Sources/ImperatorRetroPong/AboutPanel.swift` | About panel: `NSPanel` plus its SwiftUI view |
 | `Sources/ImperatorRetroPong/AboutCheck.swift` | `--about-check`, measures the panel against the spec |
+| `Sources/ImperatorRetroPong/UpdateChecker.swift` | The daily update check against GitHub Releases, and its notification |
+| `Sources/ImperatorRetroPong/UpdateCheck.swift` | `--update-check`, runs the version comparison against its test cases |
 | `Sources/ImperatorRetroPong/GameScene.swift` | SpriteKit physics, AI, scoring, CRT effects |
 | `Sources/ImperatorRetroPong/GameConfig.swift` | Colours, skins, constants, pixel font |
 | `Sources/ImperatorRetroPong/SoundManager.swift` | Square-wave synthesis via AVAudioEngine |

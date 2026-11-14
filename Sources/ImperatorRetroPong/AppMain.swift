@@ -15,6 +15,9 @@ struct ImperatorRetroPongApp {
         if CommandLine.arguments.contains("--about-check") {
             exit(AboutCheck.run())
         }
+        if CommandLine.arguments.contains("--update-check") {
+            exit(UpdateCheck.run())
+        }
         // An unrecognised flag must not fall through to `run()`. That launches a
         // second copy of the app with a second menu bar icon, and an unknown
         // flag is exactly what an older installed binary sees when a new check
@@ -24,7 +27,7 @@ struct ImperatorRetroPongApp {
                 "ImperatorRetroPong: unknown option \(unknown)\n".data(using: .utf8)!
             )
             FileHandle.standardError.write(
-                "usage: ImperatorRetroPong [--about-check]\n".data(using: .utf8)!
+                "usage: ImperatorRetroPong [--about-check|--update-check]\n".data(using: .utf8)!
             )
             exit(2)
         }

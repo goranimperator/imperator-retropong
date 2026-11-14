@@ -20,6 +20,7 @@ struct PopoverContentView: View {
             Divider()
             GameSKView(gameScene: gameScene)
                 .frame(width: GameConfig.sceneWidth, height: GameConfig.sceneHeight)
+            AppUpdateRow()
             Divider()
             footerView
         }
@@ -71,25 +72,28 @@ struct PopoverContentView: View {
     private static let headerIcon = StatusItemIcon.make(size: 16)
 
     private var footerView: some View {
-        HStack(spacing: 12) {
-            LaunchAtLoginToggle()
+        VStack(spacing: 8) {
+            HStack(spacing: 12) {
+                LaunchAtLoginToggle()
 
-            Spacer()
+                Spacer()
 
-            // Brandbook 10.1 names this "About Imperator RetroPong". The row
-            // already carries the login toggle inside 280pt, so the full name
-            // is the tooltip and the button reads "About", the way the other
-            // popover apps do it.
-            HoverButton(action: aboutAction) {
-                Text("About")
-                    .font(.caption)
+                // Brandbook 10.1 names this "About Imperator RetroPong". The row
+                // already carries the login toggle inside 280pt, so the full name
+                // is the tooltip and the button reads "About", the way the other
+                // popover apps do it.
+                HoverButton(action: aboutAction) {
+                    Text("About")
+                        .font(.caption)
+                }
+                .help("About Imperator RetroPong")
+
+                HoverButton(action: quitAction) {
+                    Text("Quit")
+                        .font(.caption)
+                }
             }
-            .help("About Imperator RetroPong")
-
-            HoverButton(action: quitAction) {
-                Text("Quit")
-                    .font(.caption)
-            }
+            UpdateCheckRow()
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -196,6 +200,104 @@ class GameHostView: NSView {
 
     deinit {
         tearDownLocalMonitor()
+    }
+}
+
+/// A newer release of the app, from `UpdateChecker`. It opens the release
+/// page: installing stays manual. Laid out as imperator-eq's row, between the
+/// game and the footer, and absent while the app is current.
+struct AppUpdateRow: View {
+    @ObservedObject private var updates = UpdateChecker.shared
+
+    var body: some View {
+        if let update = updates.available {
+            VStack(spacing: 0) {
+                Divider()
+                HStack(spacing: 10) {
+                    Image(systemName: "arrow.down.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundStyle(AppColors.brand)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Version \(update.version) is out")
+                            .font(.system(size: 12, weight: .medium))
+                        Text("You have \(UpdateChecker.currentVersion)")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button("Download") { UpdateChecker.open(update.page) }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+            }
+        }
+    }
+}
+
+/// The footer's update controls: the daily check's switch, Check Now, and the
+/// last result. Check Now runs even with the switch off, because it is asked
+/// for. The panel has no settings window, so this is where they live.
+///
+/// imperator-eq puts the result beside Check Now. At 280pt there is no room:
+/// the label, the switch and Check Now take 215pt of the 248pt the footer has,
+/// and "Could not reach GitHub" alone is 113pt. So the result has its own line,
+/// and that line is always there, so a check finishing never changes the
+/// panel's height.
+struct UpdateCheckRow: View {
+    @AppStorage(UpdateChecker.enabledKey) private var checkForUpdates = true
+    @ObservedObject private var updates = UpdateChecker.shared
+    @State private var isHovered = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 12) {
+                HStack(spacing: 6) {
+                    Text("Check for updates")
+                        .font(.caption)
+                        .fixedSize()
+                    Toggle("", isOn: $checkForUpdates)
+                        .toggleStyle(.switch)
+                        .scaleEffect(0.55)
+                        .tint(AppColors.brand)
+                        .labelsHidden()
+                        .onChange(of: checkForUpdates) { on in
+                            if on { UpdateChecker.shared.checkIfDue() }
+                        }
+                }
+                .foregroundStyle(.primary)
+                .opacity(isHovered ? 1.0 : 0.45)
+                .animation(.easeInOut(duration: 0.2), value: isHovered)
+                .onHover { isHovered = $0 }
+
+                Spacer()
+
+                HoverButton(action: { Task { await UpdateChecker.shared.check() } }) {
+                    Text("Check Now")
+                        .font(.caption)
+                        .fixedSize()
+                }
+                .disabled(updates.status == .checking)
+            }
+
+            Text(status)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var status: String {
+        let current = UpdateChecker.currentVersion
+        switch updates.status {
+        case .idle: return "Version \(current)"
+        case .checking: return "Checking\u{2026}"
+        case .upToDate: return "Up to date, version \(current)"
+        case .failed: return "Could not reach GitHub"
+        case .available(let release): return "Version \(release.version) is available, you have \(current)"
+        }
     }
 }
 

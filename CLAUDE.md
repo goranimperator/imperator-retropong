@@ -22,15 +22,65 @@ swift build
 `make run` builds and opens the bundle in place; `swift build` alone is a debug
 compile check with no bundle.
 
-No tests or linter configured. The one self-check is:
+No tests or linter configured. The two self-checks are:
 
 ```bash
 "build/Imperator RetroPong.app/Contents/MacOS/ImperatorRetroPong" --about-check
 ```
 
-It builds the real About panel and measures it against brandbook section 10:
-size, style mask, `hidesOnDeactivate`, and that the background is the standard
-window background rather than a painted colour. Prints `ABOUT_PANEL_OK`.
+```bash
+"build/Imperator RetroPong.app/Contents/MacOS/ImperatorRetroPong" --update-check
+```
+
+`--about-check` builds the real About panel and measures it against brandbook
+section 10: size, style mask, `hidesOnDeactivate`, and that the background is
+the standard window background rather than a painted colour. Prints
+`ABOUT_PANEL_OK`.
+
+`--update-check` runs the update checker's shipped version comparison against
+six cases, plus a control showing a string comparison would get `1.0.10` vs
+`1.0.9` wrong. Prints `UPDATE_COMPARE_OK`. Neither check opens a window or
+touches the network.
+
+## Update checker
+
+`UpdateChecker.swift` is the app's **only network traffic**, and it is
+deliberate: do not remove it as network code nobody asked for, and do not widen
+what it sends. Ported from imperator-dockfolders per
+`imperator-apps-brandbook/UPDATE-CHECKER.md`.
+
+- One `GET` a day to
+  `https://api.github.com/repos/goranimperator/imperator-retropong/releases/latest`.
+  It sends nothing but `Imperator-RetroPong/<version>` as the User-Agent GitHub
+  requires. No analytics, nothing about the user.
+- On by default. The **Check for updates** switch in the panel footer turns the
+  daily check off; **Check Now** runs even with it off, because it is asked for.
+- An hourly tick checks once 24 hours have passed since the last *successful*
+  check (`lastUpdateCheck`), so a failure retries within the hour.
+- A newer release shows as a row between the game and the footer, and as one
+  notification per version (`notifiedUpdateVersion`). The notification
+  permission is asked only when there is an update, never at launch. Both open
+  the release page, and `UpdateChecker.open` refuses anything but
+  `https://github.com`, since the URL comes from a network response.
+- Versions compare numerically per component, so `1.0.10` beats `1.0.9`.
+- Installing stays manual. A downloaded update meets Gatekeeper again, so the
+  README tells users to click **Done** and run the `xattr` command again.
+
+Two differences from the DockFolders file, both forced by this app:
+
+- It is an `ObservableObject` with `@Published status`, not `@Observable`.
+  Observation needs macOS 14 and this app keeps a macOS 13 minimum. Do not
+  "modernise" it to `@Observable`, and do not wrap it in
+  `@available(macOS 14, *)`: that silently drops update checks for 13 users.
+- The footer is 280pt, so the result line (`Up to date`, `Could not reach
+  GitHub`, ...) sits on its own line under Check Now instead of beside it, and
+  that line is always present so a finishing check never changes the height.
+
+The panel's height comes from its content (`MenuBarPanel` falls back to the
+hosting view's fitting size; `AppDelegate` sets no `contentHeight`). When the
+update row appears or goes away while the panel is open, `AppDelegate` shows the
+panel again to refit it and pin its top edge under the menu bar; a borderless
+window that grew by itself would grow up into the menu bar.
 
 ## Toolchain and SDK stamp
 
@@ -57,8 +107,9 @@ Verify after any build that touches the manifest or the Makefile:
 otool -l "build/Imperator RetroPong.app/Contents/MacOS/ImperatorRetroPong" | awk '/LC_BUILD_VERSION/,/^$/'
 ```
 
-`minos 13.0` with `sdk 27.0` is correct. `sdk` equal to `minos` means the stamp
-was lost.
+`minos 13.0` with `sdk` equal to the installed SDK is correct; check it against
+`xcrun --sdk macosx --show-sdk-version` (27.2 at the time of writing). `sdk`
+equal to `minos` means the stamp was lost.
 
 ## Release
 
@@ -105,7 +156,9 @@ launches a second copy of the app with a second menu bar icon.
 - `SoundManager.swift` — singleton, procedurally generates square-wave sounds via AVAudioEngine
 - `AboutPanel.swift` — About panel (`NSPanel`, 300x260) and its SwiftUI view, built the same way as imperator-widget-clock's
 - `AboutCheck.swift` — `--about-check`, which builds the real panel and measures it against brandbook section 10
-- `AppMain.swift` — `@main` entry point, `.accessory` policy, and the guard that stops an unknown flag from launching a second copy
+- `UpdateChecker.swift` - the daily update check against GitHub Releases, the app's only network traffic; see Update checker above
+- `UpdateCheck.swift` - `--update-check`, the version comparison against its test cases
+- `AppMain.swift` - `@main` entry point, `.accessory` policy, the `--about-check` and `--update-check` flags, and the guard that stops an unknown flag from launching a second copy
 
 **CRT effects** (in `GameScene`): scanlines, RGB subpixel grid, flicker, VHS tracking band, noise overlay, and periodic screen jitter — all layered via SpriteKit nodes on a `crtLayer` at zPosition 100.
 
